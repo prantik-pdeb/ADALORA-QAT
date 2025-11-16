@@ -4,7 +4,7 @@
 
 IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 
-### [Project Page](https://prantik-pdeb.github.io/adaloraqat.github.io/) | [Paper](https://prantik-pdeb.github.io/adaloraqat.github.io/) | [Code](#) (Coming Soon)
+### [🫁 Project Page](https://prantik-pdeb.github.io/adaloraqat.github.io/) | [📄Paper]() | (Coming Soon)
 
 ---
 
