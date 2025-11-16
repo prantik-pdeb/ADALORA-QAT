@@ -10,7 +10,10 @@ IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 
 ## Abstract
 
-We propose **AdaLoRA-QAT**, a two-stage fine-tuning framework that combines adaptive low-rank encoder adaptation with full quantization-aware training for efficient medical image segmentation. Our method achieves **95.6% Dice score** on chest X-ray lung segmentation while reducing trainable parameters by **16.6×** and compressing the model by **2.24×** compared to full fine-tuning, enabling deployment on resource-constrained clinical hardware.
+<sub>
+We propose <b>AdaLoRA-QAT</b>, a two-stage fine-tuning framework that combines adaptive low-rank encoder adaptation with full quantization-aware training for efficient medical image segmentation. Our method achieves <b>95.6% Dice score</b> on chest X-ray lung segmentation while reducing trainable parameters by <b>16.6×</b> and compressing the model by <b>2.24×</b> compared to full fine-tuning, enabling deployment on resource-constrained clinical hardware.
+</sub>
+
 ---
 
 ## Acknowledgments
