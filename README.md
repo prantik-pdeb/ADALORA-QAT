@@ -17,7 +17,6 @@ We propose <b>AdaLoRA-QAT</b>, a two-stage fine-tuning framework that combines a
 ---
 
 ## Acknowledgments
-
 This work was supported by IHub-Data (IIIT Hyderabad), the Turing-Roche Strategic Partnership, and the UCL NIHR Biomedical Research Centre.
 
 ---
