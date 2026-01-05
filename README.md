@@ -1,6 +1,6 @@
 # AdaLoRA-QAT: Adaptive Low Rank and Quantization Aware Segmentation
 
-**[Prantik Deb](https://prantik-pdeb.github.io/)** · **Srimanth Dhondy** · **N. Ramakrishna** · **Anu Kapoor** · **Raju S. Bapi** · **Tapabrata Chakraborti**
+**Prantik Deb** · **Srimanth Dhondy** · **N. Ramakrishna** · **Anu Kapoor** · **Raju S. Bapi** · **Tapabrata Chakraborti**
 
 IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 
