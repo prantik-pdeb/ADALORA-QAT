@@ -325,9 +325,9 @@ class SegFormerLightningModule(pl.LightningModule):
         self.criterion = CombinedLoss(bce_weight=0.5, dice_weight=0.5)
         
         # Metrics for binary segmentation
-        self.train_dice = DiceScore(num_classes=1, average='macro')
-        self.val_dice = DiceScore(num_classes=1, average='macro')
-        self.test_dice = DiceScore(num_classes=1, average='macro')
+        self.train_dice = DiceScore(num_classes=1, average='micro')
+        self.val_dice = DiceScore(num_classes=1, average='micro')
+        self.test_dice = DiceScore(num_classes=1, average='micro')
 
         self.train_iou = JaccardIndex(task='binary', num_classes=2)
         self.val_iou = JaccardIndex(task='binary', num_classes=2)
@@ -372,23 +372,25 @@ class SegFormerLightningModule(pl.LightningModule):
         
         # Update metrics based on stage
         if stage == "train":
+            self.model.train()
             self.train_dice(preds, labels)
             self.train_iou(preds_int, labels_int)
-            self.log(f"{stage}_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-            self.log(f"{stage}_dice", self.train_dice, on_step=False, on_epoch=True, prog_bar=True)
-            self.log(f"{stage}_iou", self.train_iou, on_step=False, on_epoch=True)
+            self.log(f"{stage}_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size=pixel_values.size(0))
+            self.log(f"{stage}_dice", self.train_dice, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{stage}_iou", self.train_iou, on_step=True, on_epoch=True, sync_dist=True)
         elif stage == "val":
+            self.model.eval()
             self.val_dice(preds, labels)
             self.val_iou(preds_int, labels_int)
-            self.log(f"{stage}_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-            self.log(f"{stage}_dice", self.val_dice, on_step=False, on_epoch=True, prog_bar=True)
-            self.log(f"{stage}_iou", self.val_iou, on_step=False, on_epoch=True)
+            self.log(f"{stage}_loss", loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{stage}_dice", self.val_dice, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{stage}_iou", self.val_iou, on_step=False, on_epoch=True, sync_dist=True)
         elif stage == "test":
             self.test_dice(preds, labels)
             self.test_iou(preds_int, labels_int)
-            self.log(f"{stage}_loss", loss, on_step=False, on_epoch=True)
-            self.log(f"{stage}_dice", self.test_dice, on_step=False, on_epoch=True)
-            self.log(f"{stage}_iou", self.test_iou, on_step=False, on_epoch=True)
+            self.log(f"{stage}_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
+            self.log(f"{stage}_dice", self.test_dice, on_step=False, on_epoch=True, sync_dist=True)
+            self.log(f"{stage}_iou", self.test_iou, on_step=False, on_epoch=True, sync_dist=True)
             
             # Store predictions for visualization
             self.test_predictions.append({
@@ -400,10 +402,12 @@ class SegFormerLightningModule(pl.LightningModule):
         return loss
     
     def training_step(self, batch: dict, batch_idx: int):
+        self.model.train()
         """Training step."""
         return self.shared_step(batch, "train")
     
     def validation_step(self, batch: dict, batch_idx: int):
+        self.model.eval()
         """Validation step."""
         return self.shared_step(batch, "val")
     
@@ -420,18 +424,18 @@ class SegFormerLightningModule(pl.LightningModule):
         )
         
         # Cosine annealing scheduler
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=self.trainer.max_epochs,
-            eta_min=1e-6
-        )
+        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #    optimizer,
+        #    T_max=self.trainer.max_epochs,
+        #    eta_min=1e-6
+        #)
         
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "interval": "epoch"
-            }
+            #"lr_scheduler": {
+            #    "scheduler": scheduler,
+            #    "interval": "epoch"
+            #}
         }
 
 

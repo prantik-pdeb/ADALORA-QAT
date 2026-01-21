@@ -1,5 +1,6 @@
 import os
 import datetime
+import argparse
 from PIL import Image
 import torch
 import segmentation_models_pytorch as smp #type: ignore
@@ -13,6 +14,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from torchmetrics.segmentation import DiceScore as Dice
 import surface_distance as surfdist  # type: ignore
 import numpy as np
+
 
 # ======================
 # Dataset Class
@@ -67,6 +69,7 @@ mask_transform = transforms.Compose([
     transforms.Lambda(lambda x: x.squeeze().long())
 ])
 
+
 # ======================
 # Loss Function
 # ======================
@@ -86,16 +89,12 @@ class BCEDiceLoss(nn.Module):
 # NSD Metric
 # ======================
 def compute_nsd(pred, target):
-    """Compute Normalized Surface Distance using surface-distance package."""
     pred_np = pred.cpu().numpy().astype(bool)
     target_np = target.cpu().numpy().astype(bool)
     if pred_np.sum() == 0 and target_np.sum() == 0:
-        return 1.0  # Perfect empty mask
+        return 1.0
     distances = surfdist.compute_surface_distances(target_np, pred_np, spacing_mm=(1.0, 1.0))
     nsd = surfdist.compute_average_surface_distance(distances)[1]
-    #nsd = surfdist.compute_surface_dice_at_tolerance(
-    #    target_np, pred_np, tolerance_mm=tolerance_mm, spacing_mm=(1.0, 1.0)
-    #)
     return float(nsd)
 
 
@@ -105,7 +104,7 @@ def compute_nsd(pred, target):
 class SegmentationModel(pl.LightningModule):
     def __init__(self, lr=1e-4, run_dir="./runs"):
         super(SegmentationModel, self).__init__()
-        self.save_hyperparameters()  # Saves hyperparams per run
+        self.save_hyperparameters()
         self.model = smp.DeepLabV3Plus(
             encoder_name="resnet34",
             encoder_weights="imagenet",
@@ -129,7 +128,6 @@ class SegmentationModel(pl.LightningModule):
         pred_binary = (torch.sigmoid(preds) > 0.5).int()
         dice_score = self.dice_metric(pred_binary, gt_masks.int())
 
-        # Compute NSD (batch-level average)
         nsd_scores = []
         for i in range(len(pred_binary)):
             nsd = compute_nsd(pred_binary[i, 0], gt_masks[i, 0])
@@ -157,78 +155,104 @@ class SegmentationModel(pl.LightningModule):
 
 
 # ======================
-# Data Loaders (using existing splits)
+# ENTRY POINT
 # ======================
-dataset_root = "/home/prantik/datasets_Srimanth/Final_dataset_split_Resized"
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_root", required=True)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--num_workers", type=int, default=4)
+    args = parser.parse_args()
 
-train_dataset = BinaryChestXRaySegmentationDataset(os.path.join(dataset_root, "train"),
-                                                   transform=image_transform,
-                                                   mask_transform=mask_transform)
-val_dataset = BinaryChestXRaySegmentationDataset(os.path.join(dataset_root, "val"),
-                                                 transform=image_transform,
-                                                 mask_transform=mask_transform)
-test_dataset = BinaryChestXRaySegmentationDataset(os.path.join(dataset_root, "test"),
-                                                  transform=image_transform,
-                                                  mask_transform=mask_transform)
+    # ======================
+    # Data Loaders
+    # ======================
+    train_dataset = BinaryChestXRaySegmentationDataset(
+        os.path.join(args.dataset_root, "train"),
+        transform=image_transform,
+        mask_transform=mask_transform
+    )
+    val_dataset = BinaryChestXRaySegmentationDataset(
+        os.path.join(args.dataset_root, "val"),
+        transform=image_transform,
+        mask_transform=mask_transform
+    )
+    test_dataset = BinaryChestXRaySegmentationDataset(
+        os.path.join(args.dataset_root, "test"),
+        transform=image_transform,
+        mask_transform=mask_transform
+    )
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True, persistent_workers=True)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True, persistent_workers=True)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        persistent_workers=True
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        persistent_workers=True
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        persistent_workers=True
+    )
+
+    # ======================
+    # Run Directory
+    # ======================
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    run_dir = os.path.join("./runs", f"run_{timestamp}")
+    os.makedirs(os.path.join(run_dir, "checkpoints"), exist_ok=True)
+    os.makedirs(os.path.join(run_dir, "final_models"), exist_ok=True)
+    os.makedirs(os.path.join(run_dir, "tensorboard_logs"), exist_ok=True)
+
+    # ======================
+    # Callbacks & Logger
+    # ======================
+    early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=True)
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        dirpath=os.path.join(run_dir, "checkpoints"),
+        filename="best_model",
+        save_top_k=1,
+        mode="min"
+    )
+    logger = TensorBoardLogger(save_dir=os.path.join(run_dir, "tensorboard_logs"), name="")
+
+    # ======================
+    # Training
+    # ======================
+    model = SegmentationModel(lr=args.lr, run_dir=run_dir)
+
+    trainer = pl.Trainer(
+        max_epochs=args.max_epochs,
+        accelerator="gpu",
+        devices="auto",
+        strategy="auto",
+        callbacks=[early_stopping, checkpoint_callback],
+        logger=logger
+    )
+
+    trainer.fit(model, train_loader, val_loader)
+
+    torch.save(model.state_dict(), os.path.join(run_dir, "final_models", "deeplabv3plus_final.pt"))
+    trainer.test(model, test_loader)
+
+    print(f"🎉 Training complete. Results saved in {run_dir}")
 
 
-# ======================
-# Run Directory Management
-# ======================
-timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-run_dir = os.path.join("./runs", f"run_{timestamp}")
-os.makedirs(os.path.join(run_dir, "checkpoints"), exist_ok=True)
-os.makedirs(os.path.join(run_dir, "final_models"), exist_ok=True)
-os.makedirs(os.path.join(run_dir, "tensorboard_logs"), exist_ok=True)
-
-# Save hyperparameters
-'''with open(os.path.join(run_dir, "hyperparameters.txt"), "w") as f:
-    f.write(str({
-        "lr": 0.004,
-        "batch_size": 32,
-        "img_size": (512, 512),
-        "model": "DeepLabV3Plus_resnet34",
-        "loss": "BCEWithLogits + DiceLoss"
-    }))'''
-
-
-# ======================
-# Callbacks and Logger
-# ======================
-early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=True)
-checkpoint_callback = ModelCheckpoint(
-    monitor="val_loss",
-    dirpath=os.path.join(run_dir, "checkpoints"),
-    filename="best_model",
-    save_top_k=1,
-    mode="min"
-)
-logger = TensorBoardLogger(save_dir=os.path.join(run_dir, "tensorboard_logs"), name="")
-
-# ======================
-# Training
-# ======================
-model = SegmentationModel(lr=1e-4, run_dir=run_dir)
-
-trainer = pl.Trainer(
-    max_epochs=100,
-    accelerator="gpu",
-    devices="auto",
-    strategy="auto",
-    callbacks=[early_stopping, checkpoint_callback],
-    logger=logger
-)
-
-trainer.fit(model, train_loader, val_loader)
-
-# Save final model
-torch.save(model.state_dict(), os.path.join(run_dir, "final_models", "deeplabv3plus_final.pt"))
-
-# Evaluate on test set
-trainer.test(model, test_loader)
-
-print(f"🎉 Training complete. Results saved in {run_dir}")
+if __name__ == "__main__":
+    main()

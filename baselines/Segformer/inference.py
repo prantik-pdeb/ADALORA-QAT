@@ -5,12 +5,12 @@ from typing import Callable, Optional
 from PIL import Image
 import numpy as np
 import torch
-from torch import Tensor, device, no_grad, load
+from torch import Tensor, device, no_grad
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, Resize, ToTensor, Normalize
-from torch.nn.functional import sigmoid
+from torch.nn.functional import sigmoid, interpolate
 from tqdm import tqdm
-import segmentation_models_pytorch as smp  # type: ignore
+from transformers import SegformerForSemanticSegmentation, SegformerImageProcessor
 from surface_distance import compute_surface_distances, compute_surface_dice_at_tolerance  # Google DeepMind official
 
 
@@ -98,8 +98,35 @@ def compute_nsd(pred: np.ndarray, target: np.ndarray, tolerance: float = 1.0) ->
     return float(nsd)
 
 
-# ================== MAIN EVALUATION ==================
-def evaluate_model(model, dataloader, device, save_dir: str):
+# ================== LOAD MODEL ==================
+def load_model(model_path: str, device: torch.device):
+    model = SegformerForSemanticSegmentation.from_pretrained(
+        "nvidia/segformer-b5-finetuned-ade-640-640",
+        num_labels=1,
+        ignore_mismatched_sizes=True
+    )
+    model.to(device)
+
+    ckpt = torch.load(model_path, map_location=device)
+    if "state_dict" in ckpt:
+        state_dict = ckpt["state_dict"]
+    else:
+        state_dict = ckpt
+
+    state_dict = {k.replace("model.", "").replace("module.", ""): v for k, v in state_dict.items()}
+
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    print(f"Loaded Segformer-B5 model from checkpoint: {model_path}")
+    if missing:
+        print(f"Missing keys: {len(missing)}")
+    if unexpected:
+        print(f"Unexpected keys: {len(unexpected)}")
+
+    return model
+
+
+# ================== EVALUATION ==================
+def evaluate_model(model, dataloader, device, save_dir: str, tolerance_mm: float):
     model.eval()
     dice_scores, iou_scores, nsd_scores = [], [], []
 
@@ -113,7 +140,11 @@ def evaluate_model(model, dataloader, device, save_dir: str):
         for images, masks, fnames in tqdm(dataloader, desc="Evaluating", leave=False):
             images = images.to(device)
             masks = masks.to(device).unsqueeze(1)
-            preds = sigmoid(model(images))
+
+            outputs = model(images)
+            preds = outputs.logits
+            preds = interpolate(preds, size=masks.shape[-2:], mode="bilinear", align_corners=False)
+            preds = sigmoid(preds)
             preds_bin = (preds > 0.5).float()
 
             for i in range(preds_bin.shape[0]):
@@ -126,7 +157,7 @@ def evaluate_model(model, dataloader, device, save_dir: str):
                     compute_nsd(
                         pred_tensor.numpy().astype(bool),
                         gt_tensor.numpy().astype(bool),
-                        tolerance=TOLERANCE_MM
+                        tolerance=tolerance_mm
                     )
                 )
 
@@ -150,24 +181,6 @@ def fmt(mean, std):
     return f"{mean:.4f} ± {std:.3f}"
 
 
-def load_model(model_path: str, device: torch.device):
-    model = smp.DeepLabV3Plus(
-        encoder_name="resnet34",
-        encoder_weights=None,
-        classes=1,
-        in_channels=3,
-        activation=None,
-    ).to(device)
-
-    checkpoint = torch.load(model_path, map_location=device)
-    state_dict = checkpoint.get("model_state_dict", checkpoint)
-    if list(state_dict.keys())[0].startswith("module."):
-        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-
-    model.load_state_dict(state_dict, strict=True)
-    return model
-
-
 # ================== ENTRY POINT ==================
 def main():
     parser = argparse.ArgumentParser()
@@ -175,12 +188,10 @@ def main():
     parser.add_argument("--val_images_dir", required=True)
     parser.add_argument("--val_masks_dir", required=True)
     parser.add_argument("--save_preds_dir", required=True)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--tolerance_mm", type=float, default=2.0)
+    parser.add_argument("--num_workers", type=int, default=4)
     args = parser.parse_args()
-
-    global TOLERANCE_MM
-    TOLERANCE_MM = args.tolerance_mm
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(args.save_preds_dir, exist_ok=True)
@@ -191,18 +202,21 @@ def main():
         image_transform=image_transform,
         mask_transform=mask_transform
     )
-
     val_loader = DataLoader(
         val_dataset,
         batch_size=args.batch_size,
         shuffle=False,
-        num_workers=4
+        num_workers=args.num_workers
     )
 
     model = load_model(args.model_path, device)
 
     dice_scores, iou_scores, nsd_scores, total_time, avg_time_per_image, max_mem_used_mb = evaluate_model(
-        model, val_loader, device, args.save_preds_dir
+        model,
+        val_loader,
+        device,
+        args.save_preds_dir,
+        args.tolerance_mm
     )
 
     print("\n==================== RESULTS ====================")
