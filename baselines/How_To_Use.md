@@ -4,7 +4,7 @@ To use the code, you could clone this repository and make changes file path in t
 
 #### How to use the code files?
 ##### Deeplabv3+:
-1. To train the model, use [Deeplabv3+/train.py](baselines/Deeplabv3+/train.py). The folder structure of the dataset is mentioned after this section. NOTE: The folder structure of the dataset must be the same as mentioned, else the script will result in error.
+1. To train the model, use [Deeplabv3+/train.py](./Deeplabv3+/train.py). The folder structure of the dataset is mentioned after this section. NOTE: The folder structure of the dataset must be the same as mentioned, else the script will result in error.
 ```python train.py \
   --dataset_root /path/to/test/images_rgb/Final_dataset_split_Resized \
   --batch_size 32 \
@@ -12,7 +12,7 @@ To use the code, you could clone this repository and make changes file path in t
   --max_epochs 100 \
   --num_workers 4
 ```
-2. To perform inference of the trained model, use [Deeplabv3+/inference.py](baselines/Deeplabv3+/inference.py).
+2. To perform inference of the trained model, use [Deeplabv3+/inference.py](./Deeplabv3+/inference.py).
 
 ```python inference.py \
   --model_path /path/to/latest_checkpoint.pt \
@@ -24,13 +24,13 @@ To use the code, you could clone this repository and make changes file path in t
 ```
 
 ##### Segformer:
-1. To train the model, use [Segformer/train.py](baselines/Segformer/train.py). This file uses command line arguments, so we don't need to change any constants in the script. Below is an example of how to use the script,
+1. To train the model, use [Segformer/train.py](./Segformer/train.py). This file uses command line arguments, so we don't need to change any constants in the script. Below is an example of how to use the script,
 ```python baselines/Segformer/train.py \
 --data_root /path/to/data/
 ```
 The only argument that is needed is the path to the dataset. Other arguments have defaults, you may look into the python code, if you want to change the values of these arguments.
 
-2. For testing the trained model, use [Segformer/inference.py](baselines/Segformer/inference.py). Below is an example of how to use the script,
+2. For testing the trained model, use [Segformer/inference.py](./Segformer/inference.py). Below is an example of how to use the script,
 ```python baselines/Segformer/inference.py \
   --model_path /path/to/best_model.ckpt \
   --val_images_dir /path/to/test/images_rgb \
