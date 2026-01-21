@@ -41,7 +41,7 @@ The only argument that is needed is the path to the dataset. Other arguments hav
 ```
 
 #### Dataset folder structure:
-
+```
 ├── test
 │   ├── images
 │   └── masks
@@ -51,5 +51,5 @@ The only argument that is needed is the path to the dataset. Other arguments hav
 └── val
     ├── images
     └── masks
-
+```
 NOTE: It is important the images in the "images" folder must be in RGB format and the images in the "masks" folder must be in binary format i.e., the pixel values should be either 0 or 1, nothing else. All the scripts need the data to be in the above mentioned format.
