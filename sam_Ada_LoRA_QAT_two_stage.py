@@ -24,7 +24,7 @@ try:
     import brevitas.nn as qnn
     from brevitas.quant import Int8WeightPerTensorFloat, Int8ActPerTensorFloat
     BREVITAS_AVAILABLE = True
-    print("✓ Brevitas available - Full QAT enabled")
+    print("Brevitas available - Full QAT enabled")
 except ImportError:
     BREVITAS_AVAILABLE = False
     print("  Brevitas not installed. QAT features will be unavailable.")
@@ -168,7 +168,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
                 quantized_count += 1
         
         if embed_count > 0:
-            print(f"   ✓ Patch Embedding: QUANTIZED ({embed_count} layers)")
+            print(f"   Patch Embedding: QUANTIZED ({embed_count} layers)")
     
     # 2. Quantize Mask Decoder (ALL layers)
     print(f"\n Quantizing Mask Decoder to {bit_width}-bit...")
@@ -188,7 +188,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
             decoder_count += 1
             quantized_count += 1
     
-    print(f"   ✓ All decoder layers QUANTIZED ({decoder_count} linear layers)")
+    print(f" All decoder layers QUANTIZED ({decoder_count} linear layers)")
     
     # 3. Quantize Prompt Encoder (ALL layers)
     print(f"\n Quantizing Prompt Encoder to {bit_width}-bit...")
@@ -209,7 +209,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
             quantized_count += 1
     
     if prompt_count > 0:
-        print(f"   ✓ Prompt encoder QUANTIZED ({prompt_count} linear layers)")
+        print(f" Prompt encoder QUANTIZED ({prompt_count} linear layers)")
     
     # Calculate quantization coverage
     total_linear = sum(1 for m in sam_model.modules() if isinstance(m, (nn.Linear, qnn.QuantLinear)))
@@ -241,7 +241,7 @@ def enable_qat_mode(model):
             count += 1
     
     if count > 0:
-        print(f"✓ QAT mode enabled for {count} quantized layers")
+        print(f" QAT mode enabled for {count} quantized layers")
 
 
 # ============================================================================
@@ -577,7 +577,7 @@ class AdaLoRA_Sam(nn.Module):
         }
         
         torch.save(checkpoint, path)
-        print(f"✓ AdaLoRA weights saved: {path}")
+        print(f" AdaLoRA weights saved: {path}")
     
     def load_adalora_weights(self, path: str, strict: bool = True):
         checkpoint = torch.load(path, map_location='cpu', weights_only=False)
@@ -609,7 +609,7 @@ class AdaLoRA_Sam(nn.Module):
             module.mask_v = adalora_state[f'{prefix}_mask_v'].to(device)
             module.current_rank = adalora_state[f'{prefix}_current_rank']
         
-        print(f"✓ AdaLoRA weights loaded from: {path}")
+        print(f" AdaLoRA weights loaded from: {path}")
 
 # ============================================================================
 # HYBRID TRAINING UTILITIES
@@ -624,12 +624,12 @@ def enable_decoder_training(model, config):
     if config['stage1'].get('train_decoder', False):
         for param in model.sam.mask_decoder.parameters():
             param.requires_grad = True
-        print("\n✓ Mask Decoder UNFROZEN")
+        print("\n Mask Decoder UNFROZEN")
     
     if config['stage1'].get('train_prompt_encoder', False):
         for param in model.sam.prompt_encoder.parameters():
             param.requires_grad = True
-        print("✓ Prompt Encoder UNFROZEN")
+        print(" Prompt Encoder UNFROZEN")
     
     total_params = sum(p.numel() for p in model.sam.parameters())
     trainable_params = sum(p.numel() for p in model.sam.parameters() if p.requires_grad)
@@ -679,7 +679,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'lora_encoder'
         })
-        print(f"\n✓ LoRA Encoder: {len(lora_params)} tensors, LR={config['stage1']['learning_rate']}")
+        print(f"\n LoRA Encoder: {len(lora_params)} tensors, LR={config['stage1']['learning_rate']}")
     
     if len(decoder_params) > 0:
         lr_decoder = config['stage1'].get('lr_decoder', config['stage1']['learning_rate'] * 0.4)
@@ -689,7 +689,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'decoder'
         })
-        print(f"✓ Decoder: {len(decoder_params)} tensors, LR={lr_decoder}")
+        print(f" Decoder: {len(decoder_params)} tensors, LR={lr_decoder}")
     
     if len(prompt_params) > 0:
         lr_prompt = config['stage1'].get('lr_prompt', config['stage1']['learning_rate'] * 0.4)
@@ -699,7 +699,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'prompt_encoder'
         })
-        print(f"✓ Prompt Encoder: {len(prompt_params)} tensors, LR={lr_prompt}")
+        print(f" Prompt Encoder: {len(prompt_params)} tensors, LR={lr_prompt}")
     
     optimizer = torch.optim.AdamW(param_groups)
     print("="*80 + "\n")
@@ -1058,7 +1058,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
     try:
         if hasattr(model_stage1.sam.vision_encoder, 'gradient_checkpointing_enable'):
             model_stage1.sam.vision_encoder.gradient_checkpointing_enable()
-            print("✓ Gradient checkpointing enabled")
+            print(" Gradient checkpointing enabled")
     except:
         pass
     
@@ -1138,7 +1138,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
                 'val_metrics': {k: float(v) for k, v in val_metrics.items() if not k.endswith('_std')},
             }
             torch.save(checkpoint, os.path.join(config['stage1']['save_dir'], 'best_model_stage1_fp32.pth'))
-            print(f"✓ Stage 1 best model saved (DSC: {best_val_dice_stage1:.4f})")
+            print(f" Stage 1 best model saved (DSC: {best_val_dice_stage1:.4f})")
         
         # Early stopping
         if early_stopping(val_metrics['dice']):
@@ -1301,7 +1301,7 @@ def main():
     """Main function for HYBRID training with FULL quantization"""
     
     config = {
-        'data_dir': '/home/prantik.d/Srimanth/data/Final_dataset_split_Resized',
+        'data_dir': '/file_path/',
         'model_name': 'facebook/sam-vit-base',
         'image_size': 512,
         'use_amp': True,
@@ -1495,15 +1495,6 @@ def main():
     print(f"  Size Reduction:        {(1 - 1/compression_ratio)*100:.1f}%")
     print(f"  Quantized Coverage:    {100*int8_params/total_params:.1f}%")
     
-    # Target comparison
-    target_compression = 2.7
-    if compression_ratio >= target_compression:
-        print(f"\n   EXCELLENT! Achieved {compression_ratio:.2f}x ≥ {target_compression}x target!")
-    elif compression_ratio >= target_compression * 0.9:
-        print(f"\n  ✓ GOOD! Close to {target_compression}x target")
-    else:
-        print(f"\n    Below {target_compression}x target compression")
-    
     # ========================================================================
     # Performance Analysis
     # ========================================================================
@@ -1524,12 +1515,6 @@ def main():
     print(f"  Val:  {best_dice_stage1:.4f} → {best_dice_stage2:.4f} ({val_degradation:+.2f}%)")
     print(f"  Test: {best_dice_stage1:.4f} → {test_metrics['dice']:.4f} ({test_degradation:+.2f}%)")
     
-    if test_degradation < 3:
-        print(f"   EXCELLENT! Full quantization degradation < 3%")
-    elif test_degradation < 5:
-        print(f"  ✓ GOOD! Full quantization degradation < 5%")
-    else:
-        print(f"    Higher degradation than ideal")
     
     # Comparison to baseline
     baseline_dice = 0.95
