@@ -42,7 +42,7 @@ try:
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(False)
-        print("✓ Memory-efficient attention enabled")
+        print("Memory-efficient attention enabled")
 except:
     pass
 
@@ -1273,7 +1273,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
                 'quantized_layers': quant_count
             }
             torch.save(checkpoint, os.path.join(config['stage2']['save_dir'], 'best_model_stage2_int8.pth'))
-            print(f"✓ Stage 2 best model saved (DSC: {best_val_dice_stage2:.4f})")
+            print(f" Stage 2 best model saved (DSC: {best_val_dice_stage2:.4f})")
     
     print("\n" + "="*80)
     print(f"STAGE 2 COMPLETE - Best Val DSC: {best_val_dice_stage2:.4f}")
@@ -1281,14 +1281,6 @@ def two_stage_training_full_quant(config, splits, processor, device):
     degradation = (best_val_dice_stage1 - best_val_dice_stage2) / best_val_dice_stage1 * 100
     print(f"QAT Degradation: {degradation:.2f}%")
     
-    if degradation < 3:
-        print(" EXCELLENT! Full quantization degradation < 3%")
-    elif degradation < 5:
-        print("✓ GOOD! Full quantization degradation < 5%")
-    else:
-        print("  Higher degradation than target")
-    
-    print("="*80 + "\n")
     
     return model_stage2, best_val_dice_stage1, best_val_dice_stage2, history_stage1, history_stage2
 
