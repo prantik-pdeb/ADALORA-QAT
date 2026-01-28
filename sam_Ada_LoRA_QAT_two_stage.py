@@ -28,7 +28,7 @@ try:
 except ImportError:
     BREVITAS_AVAILABLE = False
     print("  Brevitas not installed. QAT features will be unavailable.")
-    print("   Install with: pip install brevitas")
+    print("  Install with: pip install brevitas")
 
 warnings.filterwarnings('ignore')
 
@@ -1611,7 +1611,6 @@ def main():
     print(f"  Gap:          {gap_from_baseline:.2f}%")
     print(f"  Compression:  {compression_ratio:.2f}x smaller")
     
-
 
 if __name__ == "__main__":
     main()
