@@ -28,7 +28,7 @@ Perfect for deploying medical AI on resource-constrained devices.
 ### Installation
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/adalora-qat.git
+git clone https://github.com/prantik-pdeb/adalora-qat.git
 cd adalora-qat
 
 # Create environment
@@ -57,20 +57,13 @@ data/
 
 ### Train
 ```bash
-# Edit data_dir in train_adalora_qat.py
-python train_adalora_qat.py
+# Edit data_dir in sam_Ada_LoRA_QAT_two_stage.py
+python sam_Ada_LoRA_QAT_two_stage.py
 ```
-
-Training completes in ~4 hours on 1 GPU.
-
----
 
 ## Results
 
-| Method | Dice (%) | IoU (%) | Model Size | Trainable Params |
-|--------|----------|---------|------------|------------------|
-| SAM Decoder FT | 95.55 | 91.52 | 360 MB | 4.05M |
-| **AdaLoRA-QAT** | **95.59** | **91.58** | **161 MB** | **0.24M** |
+**AdaLoRA-QAT** 
 
 **Key Metrics:**
 - Dice: 95.59% ± 0.04%
@@ -123,7 +116,7 @@ mask = (torch.sigmoid(outputs.pred_masks) > 0.5).cpu().numpy()
 
 ## Configuration
 
-Key parameters in `train_adalora_qat.py`:
+Key parameters in `sam_Ada_LoRA_QAT_two_stage.py`:
 ```python
 config = {
     'data_dir': '/path/to/data',  # Your dataset path
