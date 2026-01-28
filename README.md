@@ -15,11 +15,8 @@ IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 ## Overview
 
 AdaLoRA-QAT achieves **95.6% Dice score** on chest X-ray lung segmentation with:
-- **2.24× smaller model**
-- **16.6× fewer trainable parameters**
-- **No accuracy loss** compared to full fine-tuning
-
-Perfect for deploying medical AI on resource-constrained devices.
+- **2.24× smaller model** 
+- **16.6× fewer trainable parameters** 
 
 ---
 
@@ -61,14 +58,21 @@ data/
 python sam_Ada_LoRA_QAT_two_stage.py
 ```
 
+Training completes in ~4 hours on a single GPU.
+
+---
+
 ## Results
 
-**AdaLoRA-QAT** 
+| Metric | Score |
+|--------|-------|
+| **Dice** | 95.59% ± 0.04% |
+| **IoU** | 91.58% ± 0.07% |
+| **NSD** | 94.31% ± 0.05% |
 
-**Key Metrics:**
-- Dice: 95.59% ± 0.04%
-- NSD: 94.31% ± 0.05%
-- HD95: 8.21 ± 1.23 px
+**Model Efficiency:**
+- Model Size: 2.24× compression
+- Trainable Parameters: 16.6× reduction
 
 ---
 
@@ -92,7 +96,8 @@ python sam_Ada_LoRA_QAT_two_stage.py
 ```python
 import torch
 from transformers import SamModel, SamProcessor
-from train_adalora_qat import AdaLoRA_Sam, apply_full_quantization_to_sam
+from PIL import Image
+from sam_Ada_LoRA_QAT_two_stage import AdaLoRA_Sam, apply_full_quantization_to_sam
 
 # Load model
 sam_base = SamModel.from_pretrained('facebook/sam-vit-base')
@@ -108,8 +113,10 @@ model.eval()
 processor = SamProcessor.from_pretrained('facebook/sam-vit-base')
 image = Image.open('test.png')
 inputs = processor(image, input_boxes=[[[x1, y1, x2, y2]]], return_tensors="pt")
-outputs = model(**inputs)
-mask = (torch.sigmoid(outputs.pred_masks) > 0.5).cpu().numpy()
+
+with torch.no_grad():
+    outputs = model(**inputs)
+    mask = (torch.sigmoid(outputs.pred_masks) > 0.5).cpu().numpy()
 ```
 
 ---
@@ -130,11 +137,7 @@ config = {
         'learning_rate': 5e-7,
     },
 }
-```
 
-**GPU Memory Issues?** Reduce `batch_size` to 8 and set `accumulation_steps: 2`.
-
----
 
 ## Citation
 ```bibtex
@@ -154,10 +157,8 @@ MIT License - see LICENSE file
 
 ---
 
-
----
-
 ## Acknowledgments
+
 - Meta AI for [SAM](https://github.com/facebookresearch/segment-anything)
 - Xilinx for [Brevitas](https://github.com/Xilinx/brevitas)
 - MONAI for [medical imaging tools](https://monai.io/)
