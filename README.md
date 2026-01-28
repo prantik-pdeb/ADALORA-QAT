@@ -54,7 +54,7 @@ data/
 
 ### Train
 ```bash
-# Edit data_dir in sam_Ada_LoRA_QAT_two_stage.py
+
 python sam_Ada_LoRA_QAT_two_stage.py
 ```
 
@@ -138,15 +138,6 @@ config = {
     },
 }
 
-
-## Citation
-```bibtex
-@inproceedings{deb2025adaloraqat,
-  title={AdaLoRA-QAT: Adaptive Low-Rank Adaptation with Quantization-Aware Training for Medical Image Segmentation},
-  author={Deb, Prantik and Dhondy, Srimanth and Ramakrishna, N. and Kapoor, Anu and Bapi, Raju S. and Chakraborti, Tapabrata},
-  booktitle={IEEE International Symposium on Biomedical Imaging (ISBI)},
-  year={2025}
-}
 ```
 
 ---
