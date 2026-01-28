@@ -15,7 +15,7 @@ import random
 from scipy.ndimage import binary_erosion, distance_transform_edt
 from torch.cuda.amp import autocast, GradScaler
 
-# MONAI for metrics
+# MONAI metrics
 from monai.metrics import DiceMetric, MeanIoU, HausdorffDistanceMetric, SurfaceDistanceMetric
 from monai.losses import DiceLoss
 
@@ -125,7 +125,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
         layer_quant_count = 0
         
         for name, module in layer.named_modules():
-            # Skip qkv if requested (AdaLoRA will handle it)
+            # Skip qkv if requested 
             if skip_qkv and 'qkv' in name:
                 continue
             
@@ -245,7 +245,7 @@ def enable_qat_mode(model):
 
 
 # ============================================================================
-# ADAPTIVE LoRA IMPLEMENTATION (Keep your original - unchanged)
+# ADAPTIVE LoRA IMPLEMENTATION 
 # ============================================================================
 
 class AdaLoRA_QKV(nn.Module):
@@ -321,7 +321,7 @@ class AdaLoRA_QKV(nn.Module):
         device = self.P_q.device
         I = torch.eye(self.max_rank, device=device)
     
-        # Collect all regularization terms in a list
+        # Collect all regularization terms 
         reg_terms = [
             torch.norm(self.P_q.T @ self.P_q - I, p='fro'),
             torch.norm(self.P_k.T @ self.P_k - I, p='fro'),
@@ -331,7 +331,7 @@ class AdaLoRA_QKV(nn.Module):
             torch.norm(self.Q_v @ self.Q_v.T - I, p='fro')
         ]
     
-        # Stack and sum (non-in-place operation)
+        # Stack and sum 
         reg_loss = torch.stack(reg_terms).sum()
     
         return reg_loss
@@ -431,9 +431,8 @@ class AdaLoRA_QKV(nn.Module):
         
         return qkv
 
-
 # ============================================================================
-# ADAPTIVE LoRA SAM MODEL (Keep your original - mostly unchanged)
+# ADAPTIVE LoRA SAM MODEL 
 # ============================================================================
 
 class AdaLoRA_Sam(nn.Module):
@@ -612,9 +611,8 @@ class AdaLoRA_Sam(nn.Module):
         
         print(f"✓ AdaLoRA weights loaded from: {path}")
 
-
 # ============================================================================
-# HYBRID TRAINING UTILITIES (Keep your original)
+# HYBRID TRAINING UTILITIES
 # ============================================================================
 
 def enable_decoder_training(model, config):
@@ -710,7 +708,7 @@ def create_differential_optimizer(model, config):
 
 
 # ============================================================================
-# METRICS AND LOSS (Keep your original)
+# METRICS AND LOSS
 # ============================================================================
 
 class StandardSegmentationMetrics:
@@ -853,7 +851,7 @@ class MedicalSegmentationDataset(Dataset):
 
 
 # ============================================================================
-# TRAINING FUNCTIONS (Keep your original)
+# TRAINING FUNCTIONS 
 # ============================================================================
 
 def train_epoch(model, dataloader, optimizer, criterion, device, epoch, 
@@ -1071,7 +1069,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
         model_stage1 = nn.DataParallel(model_stage1)
     model_stage1.to(device)
     
-    # Create datasets
+    #  Datasets
     train_dataset = MedicalSegmentationDataset(
         splits['train']['images'], splits['train']['masks'], processor, target_size=config['image_size']
     )
@@ -1320,9 +1318,9 @@ def main():
             'accumulation_steps': 1,
             'num_epochs': 25,
             
-            'learning_rate': 5e-5,       # LoRA encoder
-            'lr_decoder': 2e-5,          # Decoder (lower)
-            'lr_prompt': 2e-5,           # Prompt encoder (lower)
+            'learning_rate': 5e-5,       
+            'lr_decoder': 2e-5,          
+            'lr_prompt': 2e-5,          
             
             'weight_decay': 1e-4,
             'prune_at_epochs': [3, 7, 12],
@@ -1343,7 +1341,7 @@ def main():
             'batch_size': 16,
             'accumulation_steps': 1,
             'num_epochs': 10,
-            'learning_rate': 5e-7,       # Very low for QAT
+            'learning_rate': 5e-7,       
             'weight_decay': 1e-5,
             'freeze_singular_values': True,
             'save_dir': './checkpoints_stage2_int8_full',
@@ -1369,22 +1367,6 @@ def main():
     os.makedirs(config['stage1']['save_dir'], exist_ok=True)
     os.makedirs(config['stage2']['save_dir'], exist_ok=True)
     
-    print("=" * 80)
-    print(" SAM HYBRID TRAINING WITH FULL QUANTIZATION ")
-    print("ISBI 2026 Conference Submission")
-    print("=" * 80)
-    print("\n Training Strategy:")
-    print("  Stage 1: HYBRID (AdaLoRA + Full Decoder) - FP32")
-    print("  Stage 2: FULL QAT (Encoder + Decoder + Prompt) - INT8")
-    print("\n✨ Key Features:")
-    print("  ✓ Differential learning rates")
-    print("  ✓ AdaLoRA rank 48→32")
-    print("  ✓ FULL model quantization (85%+ parameters)")
-    print("  ✓ Expected 2.7x compression")
-    print("\n Expected Results:")
-    print("  Stage 1: 92-95% DSC (FP32)")
-    print("  Stage 2: 89-93% DSC (INT8, full quantization)")
-    print("=" * 80 + "\n")
     
     # Load data
     print(f"Loading data from: {config['data_dir']}")
@@ -1440,7 +1422,7 @@ def main():
     if config['device'] != 'cpu':
         torch.cuda.synchronize()
 
-    print(f"✓ Model loaded and moved to {config['device']}")
+    print(f"Model loaded and moved to {config['device']}")
     
     # Create test dataset
     test_dataset = MedicalSegmentationDataset(
@@ -1629,7 +1611,6 @@ def main():
     print(f" Stage 2 model (INT8): {config['stage2']['save_dir']}/best_model_stage2_int8.pth")
     
     print("\n" + "=" * 80)
-    print(" SUMMARY FOR ISBI 2026 PAPER")
     print("=" * 80)
     print(f"\n Method: Hybrid AdaLoRA + Full Decoder + FULL QAT")
     print(f"  Stage 1 (FP32):        {best_dice_stage1:.4f} DSC")
@@ -1653,31 +1634,6 @@ def main():
     print(f"  Gap:          {gap_from_baseline:.2f}%")
     print(f"  Compression:  {compression_ratio:.2f}x smaller")
     
-    '''if gap_from_baseline < 5 and compression_ratio >= 2.5:
-        print(f"\n   SUCCESS! Ready for ISBI submission!")
-        print(f"\n   Key selling points:")
-        print(f"     • Near-baseline performance ({gap_from_baseline:.1f}% gap)")
-        print(f"     • {compression_ratio:.1f}x compression achieved")
-        print(f"     • {100*int8_params/total_params:.0f}% of model quantized to INT8")
-        print(f"     • Hybrid approach: AdaLoRA + Full decoder")
-    else:
-        print(f"\n    Consider further tuning:")
-        if gap_from_baseline >= 5:
-            print(f"     • Increase Stage 2 epochs to 15")
-            print(f"     • Try higher Stage 2 learning rate (1e-6)")
-        if compression_ratio < 2.5:
-            print(f"     • Verify quantization applied to all components")
-            print(f"     • Check if some layers are still FP32")'''
-    
-    '''print("\n" + "=" * 80)
-    print(" Next Steps:")
-    print("=" * 80)
-    print("\n1. Run inference benchmarking (separate script)")
-    print("2. Compare with partial quantization version")
-    print("3. Profile memory usage and latency")
-    print("4. Export to ONNX/TensorRT for deployment")
-    print("5. Prepare paper with results")
-    print("\n" + "=" * 80 + "\n")'''
 
 
 if __name__ == "__main__":
