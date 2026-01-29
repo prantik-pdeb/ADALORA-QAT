@@ -15,7 +15,7 @@ import random
 from scipy.ndimage import binary_erosion, distance_transform_edt
 from torch.cuda.amp import autocast, GradScaler
 
-# MONAI for metrics
+# MONAI metrics
 from monai.metrics import DiceMetric, MeanIoU, HausdorffDistanceMetric, SurfaceDistanceMetric
 from monai.losses import DiceLoss
 
@@ -24,11 +24,11 @@ try:
     import brevitas.nn as qnn
     from brevitas.quant import Int8WeightPerTensorFloat, Int8ActPerTensorFloat
     BREVITAS_AVAILABLE = True
-    print("✓ Brevitas available - Full QAT enabled")
+    print("Brevitas available - Full QAT enabled")
 except ImportError:
     BREVITAS_AVAILABLE = False
     print("  Brevitas not installed. QAT features will be unavailable.")
-    print("   Install with: pip install brevitas")
+    print("  Install with: pip install brevitas")
 
 warnings.filterwarnings('ignore')
 
@@ -42,7 +42,7 @@ try:
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(False)
-        print("✓ Memory-efficient attention enabled")
+        print("Memory-efficient attention enabled")
 except:
     pass
 
@@ -125,7 +125,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
         layer_quant_count = 0
         
         for name, module in layer.named_modules():
-            # Skip qkv if requested (AdaLoRA will handle it)
+            # Skip qkv if requested 
             if skip_qkv and 'qkv' in name:
                 continue
             
@@ -168,7 +168,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
                 quantized_count += 1
         
         if embed_count > 0:
-            print(f"   ✓ Patch Embedding: QUANTIZED ({embed_count} layers)")
+            print(f"   Patch Embedding: QUANTIZED ({embed_count} layers)")
     
     # 2. Quantize Mask Decoder (ALL layers)
     print(f"\n Quantizing Mask Decoder to {bit_width}-bit...")
@@ -188,7 +188,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
             decoder_count += 1
             quantized_count += 1
     
-    print(f"   ✓ All decoder layers QUANTIZED ({decoder_count} linear layers)")
+    print(f" All decoder layers QUANTIZED ({decoder_count} linear layers)")
     
     # 3. Quantize Prompt Encoder (ALL layers)
     print(f"\n Quantizing Prompt Encoder to {bit_width}-bit...")
@@ -209,7 +209,7 @@ def apply_full_quantization_to_sam(sam_model, bit_width=8, skip_qkv=True):
             quantized_count += 1
     
     if prompt_count > 0:
-        print(f"   ✓ Prompt encoder QUANTIZED ({prompt_count} linear layers)")
+        print(f" Prompt encoder QUANTIZED ({prompt_count} linear layers)")
     
     # Calculate quantization coverage
     total_linear = sum(1 for m in sam_model.modules() if isinstance(m, (nn.Linear, qnn.QuantLinear)))
@@ -241,11 +241,11 @@ def enable_qat_mode(model):
             count += 1
     
     if count > 0:
-        print(f"✓ QAT mode enabled for {count} quantized layers")
+        print(f" QAT mode enabled for {count} quantized layers")
 
 
 # ============================================================================
-# ADAPTIVE LoRA IMPLEMENTATION (Keep your original - unchanged)
+# ADAPTIVE LoRA IMPLEMENTATION 
 # ============================================================================
 
 class AdaLoRA_QKV(nn.Module):
@@ -321,7 +321,7 @@ class AdaLoRA_QKV(nn.Module):
         device = self.P_q.device
         I = torch.eye(self.max_rank, device=device)
     
-        # Collect all regularization terms in a list
+        # Collect all regularization terms 
         reg_terms = [
             torch.norm(self.P_q.T @ self.P_q - I, p='fro'),
             torch.norm(self.P_k.T @ self.P_k - I, p='fro'),
@@ -331,7 +331,7 @@ class AdaLoRA_QKV(nn.Module):
             torch.norm(self.Q_v @ self.Q_v.T - I, p='fro')
         ]
     
-        # Stack and sum (non-in-place operation)
+        # Stack and sum 
         reg_loss = torch.stack(reg_terms).sum()
     
         return reg_loss
@@ -431,9 +431,8 @@ class AdaLoRA_QKV(nn.Module):
         
         return qkv
 
-
 # ============================================================================
-# ADAPTIVE LoRA SAM MODEL (Keep your original - mostly unchanged)
+# ADAPTIVE LoRA SAM MODEL 
 # ============================================================================
 
 class AdaLoRA_Sam(nn.Module):
@@ -578,7 +577,7 @@ class AdaLoRA_Sam(nn.Module):
         }
         
         torch.save(checkpoint, path)
-        print(f"✓ AdaLoRA weights saved: {path}")
+        print(f" AdaLoRA weights saved: {path}")
     
     def load_adalora_weights(self, path: str, strict: bool = True):
         checkpoint = torch.load(path, map_location='cpu', weights_only=False)
@@ -610,11 +609,10 @@ class AdaLoRA_Sam(nn.Module):
             module.mask_v = adalora_state[f'{prefix}_mask_v'].to(device)
             module.current_rank = adalora_state[f'{prefix}_current_rank']
         
-        print(f"✓ AdaLoRA weights loaded from: {path}")
-
+        print(f" AdaLoRA weights loaded from: {path}")
 
 # ============================================================================
-# HYBRID TRAINING UTILITIES (Keep your original)
+# HYBRID TRAINING UTILITIES
 # ============================================================================
 
 def enable_decoder_training(model, config):
@@ -626,12 +624,12 @@ def enable_decoder_training(model, config):
     if config['stage1'].get('train_decoder', False):
         for param in model.sam.mask_decoder.parameters():
             param.requires_grad = True
-        print("\n✓ Mask Decoder UNFROZEN")
+        print("\n Mask Decoder UNFROZEN")
     
     if config['stage1'].get('train_prompt_encoder', False):
         for param in model.sam.prompt_encoder.parameters():
             param.requires_grad = True
-        print("✓ Prompt Encoder UNFROZEN")
+        print(" Prompt Encoder UNFROZEN")
     
     total_params = sum(p.numel() for p in model.sam.parameters())
     trainable_params = sum(p.numel() for p in model.sam.parameters() if p.requires_grad)
@@ -681,7 +679,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'lora_encoder'
         })
-        print(f"\n✓ LoRA Encoder: {len(lora_params)} tensors, LR={config['stage1']['learning_rate']}")
+        print(f"\n LoRA Encoder: {len(lora_params)} tensors, LR={config['stage1']['learning_rate']}")
     
     if len(decoder_params) > 0:
         lr_decoder = config['stage1'].get('lr_decoder', config['stage1']['learning_rate'] * 0.4)
@@ -691,7 +689,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'decoder'
         })
-        print(f"✓ Decoder: {len(decoder_params)} tensors, LR={lr_decoder}")
+        print(f" Decoder: {len(decoder_params)} tensors, LR={lr_decoder}")
     
     if len(prompt_params) > 0:
         lr_prompt = config['stage1'].get('lr_prompt', config['stage1']['learning_rate'] * 0.4)
@@ -701,7 +699,7 @@ def create_differential_optimizer(model, config):
             'weight_decay': config['stage1']['weight_decay'],
             'name': 'prompt_encoder'
         })
-        print(f"✓ Prompt Encoder: {len(prompt_params)} tensors, LR={lr_prompt}")
+        print(f" Prompt Encoder: {len(prompt_params)} tensors, LR={lr_prompt}")
     
     optimizer = torch.optim.AdamW(param_groups)
     print("="*80 + "\n")
@@ -710,7 +708,7 @@ def create_differential_optimizer(model, config):
 
 
 # ============================================================================
-# METRICS AND LOSS (Keep your original)
+# METRICS AND LOSS
 # ============================================================================
 
 class StandardSegmentationMetrics:
@@ -853,7 +851,7 @@ class MedicalSegmentationDataset(Dataset):
 
 
 # ============================================================================
-# TRAINING FUNCTIONS (Keep your original)
+# TRAINING FUNCTIONS 
 # ============================================================================
 
 def train_epoch(model, dataloader, optimizer, criterion, device, epoch, 
@@ -1060,7 +1058,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
     try:
         if hasattr(model_stage1.sam.vision_encoder, 'gradient_checkpointing_enable'):
             model_stage1.sam.vision_encoder.gradient_checkpointing_enable()
-            print("✓ Gradient checkpointing enabled")
+            print(" Gradient checkpointing enabled")
     except:
         pass
     
@@ -1071,7 +1069,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
         model_stage1 = nn.DataParallel(model_stage1)
     model_stage1.to(device)
     
-    # Create datasets
+    #  Datasets
     train_dataset = MedicalSegmentationDataset(
         splits['train']['images'], splits['train']['masks'], processor, target_size=config['image_size']
     )
@@ -1140,7 +1138,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
                 'val_metrics': {k: float(v) for k, v in val_metrics.items() if not k.endswith('_std')},
             }
             torch.save(checkpoint, os.path.join(config['stage1']['save_dir'], 'best_model_stage1_fp32.pth'))
-            print(f"✓ Stage 1 best model saved (DSC: {best_val_dice_stage1:.4f})")
+            print(f" Stage 1 best model saved (DSC: {best_val_dice_stage1:.4f})")
         
         # Early stopping
         if early_stopping(val_metrics['dice']):
@@ -1275,7 +1273,7 @@ def two_stage_training_full_quant(config, splits, processor, device):
                 'quantized_layers': quant_count
             }
             torch.save(checkpoint, os.path.join(config['stage2']['save_dir'], 'best_model_stage2_int8.pth'))
-            print(f"✓ Stage 2 best model saved (DSC: {best_val_dice_stage2:.4f})")
+            print(f" Stage 2 best model saved (DSC: {best_val_dice_stage2:.4f})")
     
     print("\n" + "="*80)
     print(f"STAGE 2 COMPLETE - Best Val DSC: {best_val_dice_stage2:.4f}")
@@ -1283,14 +1281,6 @@ def two_stage_training_full_quant(config, splits, processor, device):
     degradation = (best_val_dice_stage1 - best_val_dice_stage2) / best_val_dice_stage1 * 100
     print(f"QAT Degradation: {degradation:.2f}%")
     
-    if degradation < 3:
-        print(" EXCELLENT! Full quantization degradation < 3%")
-    elif degradation < 5:
-        print("✓ GOOD! Full quantization degradation < 5%")
-    else:
-        print("  Higher degradation than target")
-    
-    print("="*80 + "\n")
     
     return model_stage2, best_val_dice_stage1, best_val_dice_stage2, history_stage1, history_stage2
 
@@ -1303,7 +1293,7 @@ def main():
     """Main function for HYBRID training with FULL quantization"""
     
     config = {
-        'data_dir': '/home/prantik.d/Srimanth/data/Final_dataset_split_Resized',
+        'data_dir': '/file_path/',
         'model_name': 'facebook/sam-vit-base',
         'image_size': 512,
         'use_amp': True,
@@ -1320,9 +1310,9 @@ def main():
             'accumulation_steps': 1,
             'num_epochs': 25,
             
-            'learning_rate': 5e-5,       # LoRA encoder
-            'lr_decoder': 2e-5,          # Decoder (lower)
-            'lr_prompt': 2e-5,           # Prompt encoder (lower)
+            'learning_rate': 5e-5,       
+            'lr_decoder': 2e-5,          
+            'lr_prompt': 2e-5,          
             
             'weight_decay': 1e-4,
             'prune_at_epochs': [3, 7, 12],
@@ -1343,7 +1333,7 @@ def main():
             'batch_size': 16,
             'accumulation_steps': 1,
             'num_epochs': 10,
-            'learning_rate': 5e-7,       # Very low for QAT
+            'learning_rate': 5e-7,       
             'weight_decay': 1e-5,
             'freeze_singular_values': True,
             'save_dir': './checkpoints_stage2_int8_full',
@@ -1369,22 +1359,6 @@ def main():
     os.makedirs(config['stage1']['save_dir'], exist_ok=True)
     os.makedirs(config['stage2']['save_dir'], exist_ok=True)
     
-    print("=" * 80)
-    print(" SAM HYBRID TRAINING WITH FULL QUANTIZATION ")
-    print("ISBI 2026 Conference Submission")
-    print("=" * 80)
-    print("\n Training Strategy:")
-    print("  Stage 1: HYBRID (AdaLoRA + Full Decoder) - FP32")
-    print("  Stage 2: FULL QAT (Encoder + Decoder + Prompt) - INT8")
-    print("\n✨ Key Features:")
-    print("  ✓ Differential learning rates")
-    print("  ✓ AdaLoRA rank 48→32")
-    print("  ✓ FULL model quantization (85%+ parameters)")
-    print("  ✓ Expected 2.7x compression")
-    print("\n Expected Results:")
-    print("  Stage 1: 92-95% DSC (FP32)")
-    print("  Stage 2: 89-93% DSC (INT8, full quantization)")
-    print("=" * 80 + "\n")
     
     # Load data
     print(f"Loading data from: {config['data_dir']}")
@@ -1440,7 +1414,7 @@ def main():
     if config['device'] != 'cpu':
         torch.cuda.synchronize()
 
-    print(f"✓ Model loaded and moved to {config['device']}")
+    print(f"Model loaded and moved to {config['device']}")
     
     # Create test dataset
     test_dataset = MedicalSegmentationDataset(
@@ -1513,15 +1487,6 @@ def main():
     print(f"  Size Reduction:        {(1 - 1/compression_ratio)*100:.1f}%")
     print(f"  Quantized Coverage:    {100*int8_params/total_params:.1f}%")
     
-    # Target comparison
-    target_compression = 2.7
-    if compression_ratio >= target_compression:
-        print(f"\n   EXCELLENT! Achieved {compression_ratio:.2f}x ≥ {target_compression}x target!")
-    elif compression_ratio >= target_compression * 0.9:
-        print(f"\n  ✓ GOOD! Close to {target_compression}x target")
-    else:
-        print(f"\n    Below {target_compression}x target compression")
-    
     # ========================================================================
     # Performance Analysis
     # ========================================================================
@@ -1542,12 +1507,6 @@ def main():
     print(f"  Val:  {best_dice_stage1:.4f} → {best_dice_stage2:.4f} ({val_degradation:+.2f}%)")
     print(f"  Test: {best_dice_stage1:.4f} → {test_metrics['dice']:.4f} ({test_degradation:+.2f}%)")
     
-    if test_degradation < 3:
-        print(f"   EXCELLENT! Full quantization degradation < 3%")
-    elif test_degradation < 5:
-        print(f"  ✓ GOOD! Full quantization degradation < 5%")
-    else:
-        print(f"    Higher degradation than ideal")
     
     # Comparison to baseline
     baseline_dice = 0.95
@@ -1629,7 +1588,6 @@ def main():
     print(f" Stage 2 model (INT8): {config['stage2']['save_dir']}/best_model_stage2_int8.pth")
     
     print("\n" + "=" * 80)
-    print(" SUMMARY FOR ISBI 2026 PAPER")
     print("=" * 80)
     print(f"\n Method: Hybrid AdaLoRA + Full Decoder + FULL QAT")
     print(f"  Stage 1 (FP32):        {best_dice_stage1:.4f} DSC")
@@ -1653,32 +1611,6 @@ def main():
     print(f"  Gap:          {gap_from_baseline:.2f}%")
     print(f"  Compression:  {compression_ratio:.2f}x smaller")
     
-    '''if gap_from_baseline < 5 and compression_ratio >= 2.5:
-        print(f"\n   SUCCESS! Ready for ISBI submission!")
-        print(f"\n   Key selling points:")
-        print(f"     • Near-baseline performance ({gap_from_baseline:.1f}% gap)")
-        print(f"     • {compression_ratio:.1f}x compression achieved")
-        print(f"     • {100*int8_params/total_params:.0f}% of model quantized to INT8")
-        print(f"     • Hybrid approach: AdaLoRA + Full decoder")
-    else:
-        print(f"\n    Consider further tuning:")
-        if gap_from_baseline >= 5:
-            print(f"     • Increase Stage 2 epochs to 15")
-            print(f"     • Try higher Stage 2 learning rate (1e-6)")
-        if compression_ratio < 2.5:
-            print(f"     • Verify quantization applied to all components")
-            print(f"     • Check if some layers are still FP32")'''
-    
-    '''print("\n" + "=" * 80)
-    print(" Next Steps:")
-    print("=" * 80)
-    print("\n1. Run inference benchmarking (separate script)")
-    print("2. Compare with partial quantization version")
-    print("3. Profile memory usage and latency")
-    print("4. Export to ONNX/TensorRT for deployment")
-    print("5. Prepare paper with results")
-    print("\n" + "=" * 80 + "\n")'''
-
 
 if __name__ == "__main__":
     main()
