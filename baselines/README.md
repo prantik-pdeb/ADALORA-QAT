@@ -44,6 +44,10 @@ python baselines/Segformer/inference.py \
   --tolerance_mm 2.0
 ```
 
+##### nnUNet:
+As for the code for nnUNet, we insist that you refer the original nnUNet repository. For training the model and performing inference of the model we followed the instructions given in the original repository, we also encourage you to do the same.
+nnUNet repository link: [https://github.com/MIC-DKFZ/nnUNet.git](https://github.com/MIC-DKFZ/nnUNet.git)
+
 #### Dataset folder structure:
 ```
 ├── test
