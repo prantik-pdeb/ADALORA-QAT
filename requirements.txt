@@ -1,0 +1,9 @@
+torch 
+torchvision 
+transformers 
+pillow 
+numpy 
+scipy 
+monai 
+brevitas 
+tqdm
