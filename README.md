@@ -94,31 +94,14 @@ Training completes in ~4 hours on a single GPU.
 
 ### Inference
 ```python
-import torch
-from transformers import SamModel, SamProcessor
-from PIL import Image
-from sam_Ada_LoRA_QAT_two_stage import AdaLoRA_Sam, apply_full_quantization_to_sam
-
-# Load model
-sam_base = SamModel.from_pretrained('facebook/sam-vit-base')
-apply_full_quantization_to_sam(sam_base, bit_width=8, skip_qkv=True)
-model = AdaLoRA_Sam(sam_base, max_rank=48, target_rank=32, alpha=32.0)
-
-# Load weights
-checkpoint = torch.load('checkpoints_stage2_int8_full/best_model_stage2_int8.pth')
-model.load_state_dict(checkpoint['model_state_dict'])
-model.eval()
-
-# Predict
-processor = SamProcessor.from_pretrained('facebook/sam-vit-base')
-image = Image.open('test.png')
-inputs = processor(image, input_boxes=[[[x1, y1, x2, y2]]], return_tensors="pt")
-
-with torch.no_grad():
-    outputs = model(**inputs)
-    mask = (torch.sigmoid(outputs.pred_masks) > 0.5).cpu().numpy()
+python -u "ADALORA-QAT/inference.py" \
+--image_path sample_data/images/C19RD_COVID-29.png \
+--checkpoint_path "best_model_stage2_int8.pth" \
+--bbox 0 0 511 511 --save_mask --visualize \
+--output_mask_path ./inf_res.png \
+--save_overlay ./overlay
 ```
-
+The above will run the inference script with the sample image present in the folder [sample_data](sample_data). The model weights could be downloaded from hugging face (https://huggingface.co/srimanth-d/ADALORA-QAT/resolve/main/best_model_stage2_int8.pth) or the final_model_weights are given in the repository.[Here are the model weights!!](final_model_weights/best_model_stage2_int8.pth)
 ---
 
 ## Configuration

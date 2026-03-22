@@ -1,3 +1,4 @@
 baselines/Deeplabv3+/train_Old.py
 baselines/Deeplabv3+/inference_Old.py
 baselines/Segformer/inference_Old.py
+__pycache__
