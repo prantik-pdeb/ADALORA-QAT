@@ -102,6 +102,7 @@ python -u "ADALORA-QAT/inference.py" \
 --save_overlay ./overlay
 ```
 The above will run the inference script with the sample image present in the folder [sample_data](sample_data). The model weights could be downloaded from hugging face (https://huggingface.co/srimanth-d/ADALORA-QAT/resolve/main/best_model_stage2_int8.pth) or the final_model_weights are given in the repository.[Here are the model weights!!](final_model_weights/best_model_stage2_int8.pth)
+
 ---
 
 ## Configuration
