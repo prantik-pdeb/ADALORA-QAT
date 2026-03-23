@@ -1,5 +1,5 @@
 ### How to use:
-### python -u inference.py \
+### python -u inference/inference.py \
 # --image_path sample_data/images/C19RD_COVID-29.png \
 # --checkpoint_path "best_model_stage2_int8.pth" \
 # --bbox 0 0 511 511 --save_mask --visualize \

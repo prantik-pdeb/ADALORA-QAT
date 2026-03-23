@@ -55,7 +55,7 @@ data/
 ### Train
 ```bash
 
-python sam_Ada_LoRA_QAT_two_stage.py
+python training/sam_Ada_LoRA_QAT_two_stage.py
 ```
 
 Training completes in ~4 hours on a single GPU.
@@ -94,7 +94,7 @@ Training completes in ~4 hours on a single GPU.
 
 ### Inference
 ```python
-python -u inference.py \
+python -u inference/inference.py \
 --image_path sample_data/images/C19RD_COVID-29.png \
 --checkpoint_path "best_model_stage2_int8.pth" \
 --bbox 0 0 511 511 --save_mask --visualize \
@@ -107,7 +107,7 @@ The above will run the inference script with the sample image present in the fol
 
 ## Configuration
 
-Key parameters in `sam_Ada_LoRA_QAT_two_stage.py`:
+Key parameters in [`sam_Ada_LoRA_QAT_two_stage.py`](training/sam_Ada_LoRA_QAT_two_stage.py):
 ```python
 config = {
     'data_dir': '/path/to/data',  # Your dataset path
