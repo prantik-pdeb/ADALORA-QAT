@@ -60,4 +60,4 @@ nnUNet repository link: [https://github.com/MIC-DKFZ/nnUNet.git](https://github.
     ├── images
     └── masks
 ```
-NOTE: It is important the images in the "images" folder must be in RGB format and the images in the "masks" folder must be in binary format i.e., the pixel values should be either 0 or 1, nothing else. All the scripts need the data to be in the above mentioned format.
+**NOTE: It is important the images in the "images" folder must be in RGB format and the images in the "masks" folder must be in binary format i.e., the pixel values should be either 0 or 1, nothing else. All the scripts need the data to be in the above mentioned format.**

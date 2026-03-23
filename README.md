@@ -101,7 +101,7 @@ python -u inference.py \
 --output_mask_path ./inf_res.png \
 --save_overlay ./overlay
 ```
-The above will run the inference script with the sample image present in the folder [sample_data](sample_data). The model weights could be downloaded from hugging face (https://huggingface.co/srimanth-d/ADALORA-QAT/resolve/main/best_model_stage2_int8.pth) or the final_model_weights are given in the repository.[Here are the model weights!!](final_model_weights/best_model_stage2_int8.pth)
+The above will run the inference script with the sample image present in the folder [sample_data](sample_data). The model weights could be downloaded from hugging face (https://huggingface.co/srimanth-d/ADALORA-QAT/resolve/main/best_model_stage2_int8.pth)
 
 ---
 
@@ -123,6 +123,7 @@ config = {
 }
 
 ```
+The above configuration is contains key hyperparameters that could be changed(if you want to **"experiment"**). If you are an advanced user and want to experiment more, you might refer the python file [sam_Ada_LoRA_QAT_two_stage.py](./sam_Ada_LoRA_QAT_two_stage.py) and make changes to the **"configuration dict"**(present at the end of the code.).
 
 ---
 
