@@ -129,7 +129,7 @@ The above configuration is contains key hyperparameters that could be changed(if
 
 ## License
 
-MIT License - see LICENSE file
+MIT License - see [LICENSE.md](./LICENSE.md) file
 
 ---
 
