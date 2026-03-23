@@ -1,12 +1,10 @@
 ### How to use:
-### python -u "/home/prantik/Srimanth/test_folder/adalora-qat/inference.py" \
-# --image_path /home/prantik/Srimanth/data/Final_dataset_split_Resized/test/images/C19RD_COVID-29.png \
-# --checkpoint_path "/home/prantik/Srimanth/model_weights/ISBI_final_quantization_weights_15th(FINAL)/\
-# checkpoints_stage2_int8_full/best_model_stage2_int8.pth" \
-# --bbox 0 0 511 511 --save_mask --visualize\
-# --output_mask_path /home/prantik/Srimanth/test_folder/adalora-qat/inf_res.png \
-# --save_overlay /home/prantik/Srimanth/test_folder/adalora-qat/overlay
-
+### python -u inference.py \
+# --image_path sample_data/images/C19RD_COVID-29.png \
+# --checkpoint_path "best_model_stage2_int8.pth" \
+# --bbox 0 0 511 511 --save_mask --visualize \
+# --output_mask_path ./inf_res.png \
+# --save_overlay ./overlay
 
 import argparse
 import torch
