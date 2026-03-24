@@ -123,7 +123,7 @@ config = {
 }
 
 ```
-The above configuration is contains key hyperparameters that could be changed(if you want to **"experiment"**). If you are an advanced user and want to experiment more, you might refer the python file [sam_Ada_LoRA_QAT_two_stage.py](./sam_Ada_LoRA_QAT_two_stage.py) and make changes to the **"configuration dict"**(present at the end of the code.).
+The above configuration is contains key hyperparameters that could be changed(if you want to **"experiment"**). If you are an advanced user and want to experiment more, you might refer the python file [sam_Ada_LoRA_QAT_two_stage.py](training/sam_Ada_LoRA_QAT_two_stage.py) and make changes to the **"configuration dict"**(present at the end of the code.).
 
 ---
 
