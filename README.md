@@ -110,9 +110,9 @@ The above will run the inference script with the sample image present in the fol
 Key parameters in [`sam_Ada_LoRA_QAT_two_stage.py`](training/sam_Ada_LoRA_QAT_two_stage.py):
 ```python
 config = {
-    'data_dir': '/path/to/data',  # Your dataset path
+    'data_dir': '/path/to/data',  
     'stage1': {
-        'batch_size': 16,         # Adjust for GPU memory
+        'batch_size': 16,        
         'num_epochs': 25,
         'learning_rate': 5e-5,
     },
