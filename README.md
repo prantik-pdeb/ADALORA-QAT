@@ -6,7 +6,7 @@
 
 IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 
-**IEEE ISBI 2025 (Accepted)**
+**IEEE ISBI 2025 (Accepted: Oral Presentation)**
 
 [Project Page](https://prantik-pdeb.github.io/adaloraqat.github.io/)
 
