@@ -10,6 +10,8 @@ IIIT Hyderabad · NIMS Hyderabad · The Alan Turing Institute · UCL
 
 [Project Page](https://prantik-pdeb.github.io/adaloraqat.github.io/)
 
+[Hugging Face model page](https://huggingface.co/srimanth-d/ADALORA-QAT)
+
 ---
 
 ## Overview
