@@ -127,6 +127,23 @@ The above configuration is contains key hyperparameters that could be changed(if
 
 ---
 
+## Citation
+
+When using this model, please cite: Deb, Prantik, et al. "ADALORA-QAT: Adaptive Low Rank and Quantization Aware Segmentation." 2026 IEEE 23rd International Symposium on Biomedical Imaging (ISBI). IEEE, 2026.
+
+```
+@inproceedings{deb2026adalora,
+  title={ADALORA-QAT: Adaptive Low Rank and Quantization Aware Segmentation},
+  author={Deb, Prantik and Dhondy, Srimanth and Ramakrishna, N and Kapoor, Anu and Bapi, Raju S and Chakraborti, Tapabrata},
+  booktitle={2026 IEEE 23rd International Symposium on Biomedical Imaging (ISBI)},
+  pages={1--4},
+  year={2026},
+  organization={IEEE}
+}
+```
+
+---
+
 ## License
 
 MIT License - see [LICENSE.md](./LICENSE.md) file
